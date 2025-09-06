@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Overseas Recruitment & Visa Tracking — Modern UI + GitHub Sync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg:#ffffff;
+      --panel:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --primary:#1d4ed8;   /* Blue */
+      --primary-600:#2563eb;
+      --primary-50:#eff6ff;
+      --accent:#f97316;    /* Orange */
+      --accent-600:#ea580c;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family: Inter, system-ui, Arial, sans-serif; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Header */
+    header {
+      position: sticky; top:0; z-index:10;
+      background:linear-gradient(180deg, #ffffffcc, #ffffffcc), #fff;
+      backdrop-filter: blur(6px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar {
+      width:100%;
+      margin:0 auto;
+      padding:10px 16px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .logo { width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border); }
+    .title { display:flex; flex-direction:column; }
+    .title h1 { font-size:18px; margin:0; font-weight:700; }
+    .title .sub { color:var(--muted); font-size:12px; }
+
+    /* Tabs */
+    .tabs { border-top:1px solid var(--border); background:#fff; }
+    .tabs-inner { width:100%; margin:0 auto; padding:8px 16px; display:flex; gap:8px; align-items:center; }
+    .tab {
+      border:1px solid var(--border);
+      background:#fff; color:var(--text);
+      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600;
+    }
+    .tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    /* Main Container */
+    .container { width:100%; margin:0 auto; padding:12px 12px; }
+
+    /* Cards/Sections */
+    section.card {
+      background: var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    }
+    section.card h2 { margin:0 0 6px 0; font-size:18px; }
+    section.card h3 { margin:8px 0; font-size:16px; }
+    .muted { color:var(--muted); font-size:12px; }
+
+    /* Inputs & Buttons */
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    .grid4 { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+    @media (max-width: 1280px) { .grid4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
+
+    label { font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
+    input[type="text"], input[type="number"], select, textarea {
+      background:#fff; color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px; padding:9px 10px; width:100%;
+      font-size:14px;
+    }
+    textarea { resize:vertical; }
+    .btn {
+      background:var(--primary);
+      color:#fff; border:none; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:700;
+    }
+    .btn:hover { background:var(--primary-600); }
+    .btn.secondary { background:#fff; color:var(--text); border:1px solid var(--border); }
+    .btn.orange { background:var(--accent); }
+    .btn.orange:hover { background:var(--accent-600); }
+    .btn.danger { background:var(--bad); }
+
+    /* Tables */
+    .scroll { max-height: 65vh; overflow:auto; border:1px solid var(--border); border-radius:10px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:8px 8px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top; background:#fff; }
+    th { position: sticky; top:0; background:var(--primary-50); z-index:1; text-align:left; }
+    .actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* Status pill */
+    .status {
+      padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border); white-space:nowrap; display:inline-block;
+    }
+
+    /* Health list */
+    .health-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
+    .good { color:var(--good); font-weight:600; }
+    .overdue { color:var(--warn); font-weight:600; }
+
+    /* Modals */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal-card { background:#fff; border:1px solid var(--border); border-radius:12px; width:920px; max-width:95vw; max-height:92vh; overflow:auto; box-shadow:0 10px 30px rgba(0,0,0,0.15); }
+    .modal-header { padding:10px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+    .modal-body { padding:10px 12px; }
+    .modal-footer { padding:10px 12px; display:flex; justify-content:flex-end; gap:8px; border-top:1px solid var(--border); }
+
+    /* Badges/chips */
+    .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px; }
+    .chip b { color: var(--primary); }
+
+    /* Hide views helper */
+    .hidden { display:none; }
+
+    /* Section headings */
+    .section-step { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .step-index {
+      width:26px; height:26px; border-radius:999px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+    }
+
+    .footer-note { color:var(--muted); font-size:12px; text-align:center; margin:14px 0 8px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="topbar">
+      <img class="logo" src="https://lh3.googleusercontent.com/d/1oQr4RoR9ON5vK6U_oIN2hW0HdnpEloO8" alt="Department Logo" onerror="this.style.visibility='hidden'">
+      <div class="title">
+        <h1>Overseas Recruitment & Visa Tracking</h1>
+        <span class="sub">Interview → Visa Pipeline. Imports, Manual Edits, Exceptions, Dashboard. Dates in dd-mmm-yy.</span>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn secondary" onclick="openGitHubSync()">GitHub Sync</button>
+      <span id="gh_status" class="muted">GitHub: Not configured</span>
+      <div style="width:8px;"></div>
+      <button class="btn secondary" onclick="downloadBackup()">Backup</button>
+      <label class="btn secondary" style="cursor:pointer;">
+        Restore <input id="backupFile" type="file" accept=".json" style="display:none" onchange="restoreBackup()">
+      </label>
+      <button class="btn danger" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="tabs">
+      <div class="tabs-inner">
+        <button id="tab-manage" class="tab active" onclick="setView('manage')">Manage Data</button>
+        <button id="tab-exceptions" class="tab" onclick="setView('exceptions')">On Hold / Backout / Unfit</button>
+        <button id="tab-dashboard" class="tab" onclick="setView('dashboard')">Dashboard</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Views -->
+  <div class="container">
+    <!-- Manage Data View (STACKED SECTIONS) -->
+    <div id="view-manage">
+      <!-- Step 1: Import Interviews + Manual Entry -->
+      <section class="card">
+        <div class="section-step">
+          <div class="step-index">1</div>
+          <h2>Agency Interview List — Import & Manual Entry</h2>
+        </div>
+        <p class="muted">Import initial selections from agency (.xlsx). You can also add or correct entries below. Date format: dd-mmm-yy (e.g., 06-Sep-25).</p>
+
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <label>Interview List (.xlsx)</label>
+            <input type="file" id="interviewFile" accept=".xlsx" />
+          </div>
+          <button class="btn" onclick="uploadInterviews()">Upload Interviews</button>
+          <div id="importResult1" class="muted"></div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--border); margin:12px 0;">
+
+        <h3>Manual Entry / Quick Edit</h3>
+        <div class="grid4">
+          <div><label>Interview Date (dd-mmm-yy)</label><input id="m_interviewDate" type="text" placeholder="06-Sep-25"></div>
+          <div><label>Agency</label><input id="m_agency" type="text" placeholder="Agency Name"></div>
+          <div><label>Location</label><input id="m_location" type="text" placeholder="City / State"></div>
+          <div><label>Candidate Name</label><input id="m_name" type="text" placeholder="Full Name"></div>
+
+          <div><label>Passport Number</label><input id="m_passport" type="text" placeholder="e.g., P1234567"></div>
+          <div><label>Position Offered</label><input id="m_position" type="text" placeholder="Position"></div>
+          <div><label>Salary Offered</label><input id="m_salary" type="number" step="0.01" placeholder="Amount"></div>
+          <div><label>Contact</label><input id="m_contact" type="text" placeholder="+91..."></div>
+
+          <div><label>Interview Score (%)</label><input id="m_score" type="number" min="0" max="100" placeholder="0-100"></div>
+          <div><label>Interviewer</label><input id="m_interviewer" type="text" placeholder="Name"></div>
+          <div><label>Hire Type</label>
+            <select id="m_hireType">
+              <option value="NEW_HIRE">New-Hire</option>
+              <option value="REHIRE">Re-Hire</option>
+            </select>
+          </div>
+          <div><label>Interviewer Remark</label><input id="m_remark" type="text" placeholder="Notes"></div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <button class="btn orange" onclick="manualSave()">Add / Update Candidate</button>
+          <button class="btn secondary" onclick="manualClear()">Clear Form</button>
+          <span class="muted">Upsert is based on Passport Number.</span>
+        </div>
+        <div id="manualResult" class="muted" style="margin-top:6px;"></div>
+      </section>
+
+      <!-- Step 2: Periodic Visa Updates with extra fields -->
+      <section class="card">
+        <div class="section-step">
+          <div class="step-index">2</div>
+          <h2>Periodic Visa Updates — Import from Agency</h2>
+        </div>
+        <p class="muted">Import every 2 days (.xlsx). Supports Status, Visa Number, Sponsor ID, Visa Category, and Notes.</p>
+
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <label>Visa Update (.xlsx)</label>
+            <input type="file" id="visaFile" accept=".xlsx" />
+          </div>
+          <button class="btn" onclick="uploadVisa()">Upload Visa Updates</button>
+          <div id="importResult2" class="muted"></div>
+        </div>
+      </section>
+
+      <!-- Step 3: Compiled Table & Filters -->
+      <section class="card">
+        <div class="section-step">
+          <div class="step-index">3</div>
+          <h2>Compiled Candidates — Filters & Inline Actions</h2>
+        </div>
+
+        <div class="row" style="gap:10px; margin-bottom:8px;">
+          <div style="min-width:220px;">
+            <label>Agency</label>
+            <select id="f_agency" onchange="loadCandidates()">
+              <option value="">All Agencies</option>
+            </select>
+          </div>
+          <div style="min-width:200px;">
+            <label>Status</label>
+            <select id="f_status" onchange="loadCandidates()">
+              <option value="">All Statuses</option>
+            </select>
+          </div>
+          <div style="min-width:180px;">
+            <label>Hire Type</label>
+            <select id="f_hire" onchange="loadCandidates()">
+              <option value="">All</option>
+              <option value="NEW_HIRE">New-Hire</option>
+              <option value="REHIRE">Re-Hire</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:240px;">
+            <label>Search</label>
+            <input id="f_search" type="text" placeholder="Name / Passport / Location / Position / Visa No" oninput="loadCandidates()">
+          </div>
+          <div style="align-self:flex-end;">
+            <button class="btn secondary" onclick="resetFilters()">Reset</button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <table id="candTable">
+            <thead>
+            <tr>
+              <th>Interview Date</th>
+              <th>Agency</th>
+              <th>Location</th>
+              <th>Name</th>
+              <th>Passport</th>
+              <th>Position</th>
+              <th>Hire Type</th>
+              <th>Visa No</th>
+              <th>Sponsor ID</th>
+              <th>Visa Category</th>
+              <th>Salary</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Exceptions View -->
+    <div id="view-exceptions" class="hidden">
+      <section class="card">
+        <h2>Exceptions — On Hold / Backout / Medical Unfit</h2>
+        <p class="muted">Review and modify statuses to move candidates back into the active pipeline if needed.</p>
+
+        <div class="row" style="gap:10px; margin-bottom:8px;">
+          <div style="min-width:220px;">
+            <label>Agency</label>
+            <select id="x_agency" onchange="renderExceptions()">
+              <option value="">All Agencies</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:240px;">
+            <label>Search</label>
+            <input id="x_search" type="text" placeholder="Name / Passport / Position" oninput="renderExceptions()">
+          </div>
+        </div>
+
+        <div class="scroll">
+          <table id="excTable">
+            <thead>
+            <tr>
+              <th>Agency</th>
+              <th>Name</th>
+              <th>Passport</th>
+              <th>Position</th>
+              <th>Reason</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="view-dashboard" class="hidden">
+      <section class="card">
+        <h2>Dashboard — Live Metrics</h2>
+        <div class="row" style="flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <span class="chip"><b>Total</b> <span id="d_total" style="margin-left:6px;"></span></span>
+          <span class="chip"><b>Visas Allotted</b> <span id="d_allotted" style="margin-left:6px;"></span></span>
+          <span class="chip"><b>New-Hire</b> <span id="d_new" style="margin-left:6px;"></span></span>
+          <span class="chip"><b>Re-Hire</b> <span id="d_re" style="margin-left:6px;"></span></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="grid2">
+          <div>
+            <h3>Pipeline by Status</h3>
+            <canvas id="statusChart" height="220"></canvas>
+          </div>
+          <div>
+            <h3>Visas Allotted per Agency</h3>
+            <canvas id="allotChart" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="grid2">
+          <div>
+            <h3>Agency vs Status (Stacked)</h3>
+            <canvas id="agencyStatusChart" height="240"></canvas>
+          </div>
+          <div>
+            <h3>Hire Type by Agency</h3>
+            <canvas id="hireTypeChart" height="240"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Agency Update Health</h3>
+        <div id="agencyHealth" class="muted"></div>
+      </section>
+    </div>
+
+    <div class="footer-note">Data is saved locally and can sync with GitHub. Use GitHub Sync to configure.</div>
+  </div>
+
+  <!-- Modals root -->
+  <div id="modal-root"></div>
+
+  <script>
+    // ==============================
+    // CONSTANTS / ENUMS
+    // ==============================
+    const DB_KEY = 'visaTracker.localDB.v3'; // bumped for new features
+    const GITHUB_CFG_KEY = 'visaTracker.githubConfig.v1';
+    const STATUS_LIST = [
+      "SELECTED","HOLD","BACKOUT","PASSPORT_UNDER_RENEWAL","READY_FOR_MEDICAL",
+      "MEDICAL_FIT","MEDICAL_UNFIT","VFS_DONE","VISA_STAMPED",
+      "WAITING_FOR_TICKET","TICKET_ISSUED","ARRIVED"
+    ];
+    const STATUS_SYNONYM_MAP = new Map([
+      ["selected","SELECTED"],
+      ["hold","HOLD"], ["on hold","HOLD"], ["holded","HOLD"],
+      ["backout","BACKOUT"],["back out","BACKOUT"],["withdrawn","BACKOUT"],
+      ["passport under renewal","PASSPORT_UNDER_RENEWAL"],["passport renewal","PASSPORT_UNDER_RENEWAL"],["under renewal","PASSPORT_UNDER_RENEWAL"],
+      ["ready for medical","READY_FOR_MEDICAL"],["medical pending","READY_FOR_MEDICAL"],["medical-ready","READY_FOR_MEDICAL"],
+      ["medical fit","MEDICAL_FIT"],["fit","MEDICAL_FIT"],
+      ["medical unfit","MEDICAL_UNFIT"],["unfit","MEDICAL_UNFIT"],
+      ["vfs done","VFS_DONE"],["vfs","VFS_DONE"],
+      ["visa stamped","VISA_STAMPED"],["stamped","VISA_STAMPED"],
+      ["waiting for ticket","WAITING_FOR_TICKET"],["awaiting ticket","WAITING_FOR_TICKET"],["ticket pending","WAITING_FOR_TICKET"],
+      ["ticket issued","TICKET_ISSUED"],["ticketed","TICKET_ISSUED"],
+      ["arrived","ARRIVED"],["joined","ARRIVED"],["onboarded","ARRIVED"]
+    ]);
+    const HIRE_TYPES = ["NEW_HIRE","REHIRE"];
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // ==============================
+    // DATABASE (localStorage)
+    // ==============================
+    let db = null;
+    function defaultDB() {
+      return { nextId: 1, candidates: [], updates: [] };
+    }
+    function loadDB() {
+      try {
+        const raw = localStorage.getItem(DB_KEY);
+        db = raw ? JSON.parse(raw) : defaultDB();
+        // migrate new fields
+        db.candidates.forEach(c => {
+          if (!("visaNumber" in c)) c.visaNumber = "";
+          if (!("sponsorId" in c)) c.sponsorId = "";
+          if (!("visaCategory" in c)) c.visaCategory = "";
+          if (!("hireType" in c)) c.hireType = "NEW_HIRE";
+        });
+      } catch(e) { db = defaultDB(); }
+    }
+    function saveDB() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+    function onDataChanged() {
+      saveDB();
+      if (getGitHubConfig().autoSave) scheduleGitHubSave();
+    }
+
+    // ==============================
+    // UTILS (Dates, Numbers, Strings)
+    // ==============================
+    const nowIso = () => new Date().toISOString();
+    const pad2 = n => String(n).padStart(2,'0');
+    function formatDMY(input) {
+      if (!input) return '';
+      const d = (input instanceof Date) ? input : new Date(input);
+      if (isNaN(d.getTime())) return '';
+      const dd = pad2(d.getDate());
+      const mmm = MONTHS[d.getMonth()];
+      const yy = String(d.getFullYear()).slice(-2);
+      return `${dd}-${mmm}-${yy}`;
+    }
+    function formatDMYTime(input) {
+      if (!input) return '';
+      const d = new Date(input);
+      if (isNaN(d.getTime())) return '';
+      const ddmmyy = formatDMY(d);
+      const hh = pad2(d.getHours());
+      const mm = pad2(d.getMinutes());
+      return `${ddmmyy} ${hh}:${mm}`;
+    }
+    function parseDdMmmYy(s) {
+      if (!s) return null;
+      const v = String(s).trim();
+      const rx = /^(\d{1,2})[\/\-\s]([A-Za-z]{3})[\/\-\s](\d{2,4})$/;
+      const m = v.match(rx);
+      if (!m) return null;
+      let [_, dd, mon, y] = m;
+      dd = parseInt(dd,10);
+      const idx = MONTHS.findIndex(x => x.toLowerCase() === mon.toLowerCase());
+      if (idx < 0) return null;
+      let yyyy = parseInt(y,10);
+      if (y.length === 2) yyyy = 2000 + yyyy; // assume 20xx
+      const date = new Date(Date.UTC(yyyy, idx, dd));
+      if (isNaN(date.getTime())) return null;
+      return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth()+1)}-${pad2(date.getUTCDate())}`;
+    }
+    function parseMaybeDate(v) {
+      if (v == null || v === '') return null;
+      if (v instanceof Date) {
+        return `${v.getFullYear()}-${pad2(v.getMonth()+1)}-${pad2(v.getDate())}`;
+      }
+      if (typeof v === 'number') {
+        // Excel serial fallback:
+        const d = new Date((v - 25569) * 86400 * 1000);
+        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      }
+      if (typeof v === 'string') {
+        const iso = parseDdMmmYy(v);
+        if (iso) return iso;
+        const d = new Date(v);
+        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      }
+      return null;
+    }
+    function parseUserDateInput(v) {
+      return parseDdMmmYy(v) || parseMaybeDate(v);
+    }
+    function numeric(val) {
+      if (val == null || val === '') return null;
+      const n = Number(String(val).replace(/[^0-9.\-]/g,''));
+      return isNaN(n) ? null : n;
+    }
+    function intOrNull(val) {
+      if (val == null || val === '') return null;
+      const s = String(val).replace('%','').trim();
+      const n = parseInt(s,10);
+      return isNaN(n) ? null : n;
+    }
+    function safeStr(v) { return v == null ? '' : String(v).trim(); }
+    function normalizePassport(p) { return safeStr(p).toUpperCase().replace(/\s+/g,''); }
+    function parseStatus(s) {
+      if (!s) return null;
+      const key = String(s).trim().toLowerCase();
+      if (STATUS_SYNONYM_MAP.has(key)) return STATUS_SYNONYM_MAP.get(key);
+      const up = String(s).trim().toUpperCase().replace(/\s+/g,'_');
+      return STATUS_LIST.includes(up) ? up : null;
+    }
+    function parseHireType(s) {
+      if (!s) return null;
+      const k = String(s).trim().toLowerCase();
+      if (["rehire","re-hire","re hire","returning","existing"].includes(k)) return "REHIRE";
+      if (["new","new-hire","new hire","fresh","first-time","first time"].includes(k)) return "NEW_HIRE";
+      const up = String(s).trim().toUpperCase().replace(/\s+/g,'_');
+      return HIRE_TYPES.includes(up) ? up : null;
+    }
+    function colorForStatus(st, alpha=1) {
+      const map = {
+        SELECTED:`rgba(29,78,216,${alpha})`,
+        HOLD:`rgba(234,179,8,${alpha})`,
+        BACKOUT:`rgba(185,28,28,${alpha})`,
+        PASSPORT_UNDER_RENEWAL:`rgba(251,146,60,${alpha})`,
+        READY_FOR_MEDICAL:`rgba(16,185,129,${alpha})`,
+        MEDICAL_FIT:`rgba(34,197,94,${alpha})`,
+        MEDICAL_UNFIT:`rgba(239,68,68,${alpha})`,
+        VFS_DONE:`rgba(59,130,246,${alpha})`,
+        VISA_STAMPED:`rgba(234,88,12,${alpha})`,
+        WAITING_FOR_TICKET:`rgba(99,102,241,${alpha})`,
+        TICKET_ISSUED:`rgba(2,132,199,${alpha})`,
+        ARRIVED:`rgba(21,128,61,${alpha})`
+      };
+      return map[st] || `rgba(148,163,184,${alpha})`;
+    }
+    function fmtMoney(n) { return n!=null && n!=='' ? Number(n).toLocaleString(undefined,{maximumFractionDigits:2}) : ''; }
+
+    // ==============================
+    // DATA ACCESS
+    // ==============================
+    function findByPassport(passport) {
+      const p = normalizePassport(passport);
+      return db.candidates.find(c => normalizePassport(c.passportNumber) === p) || null;
+    }
+    function recordStatus(candidateId, status, note, source, timestamp=null) {
+      const ts = timestamp || nowIso();
+      db.updates.push({ id: db.updates.length+1, candidateId, status, note: note||"", source: source||"MANUAL", timestamp: ts });
+    }
+    function upsertCandidateByPassport(input) {
+      const passport = normalizePassport(input.passportNumber);
+      if (!passport) throw new Error("Passport Number is required");
+      const now = nowIso();
+      let c = findByPassport(passport);
+      const hireType = input.hireType || "NEW_HIRE";
+
+      if (!c) {
+        c = {
+          id: db.nextId++,
+          interviewDate: input.interviewDate || null,
+          agencyName: input.agencyName || '',
+          location: input.location || '',
+          candidateName: input.candidateName || '',
+          passportNumber: input.passportNumber || '',
+          positionOffered: input.positionOffered || '',
+          salaryOffered: input.salaryOffered ?? null,
+          contactDetails: input.contactDetails || '',
+          interviewScore: input.interviewScore ?? null,
+          interviewerName: input.interviewerName || '',
+          interviewerRemark: input.interviewerRemark || '',
+          hireType: hireType,
+          visaNumber: input.visaNumber || '',
+          sponsorId: input.sponsorId || '',
+          visaCategory: input.visaCategory || '',
+          status: input.status || "SELECTED",
+          statusUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now
+        };
+        db.candidates.push(c);
+        recordStatus(c.id, c.status, "Auto-set on import", "IMPORT", now);
+        return { created: true, updated: false, candidate: c };
+      } else {
+        c.interviewDate = input.interviewDate ?? c.interviewDate;
+        c.agencyName = input.agencyName ?? c.agencyName;
+        c.location = input.location ?? c.location;
+        c.candidateName = input.candidateName ?? c.candidateName;
+        c.passportNumber = input.passportNumber ?? c.passportNumber;
+        c.positionOffered = input.positionOffered ?? c.positionOffered;
+        c.salaryOffered = (input.salaryOffered != null) ? input.salaryOffered : c.salaryOffered;
+        c.contactDetails = input.contactDetails ?? c.contactDetails;
+        c.interviewScore = (input.interviewScore != null) ? input.interviewScore : c.interviewScore;
+        c.interviewerName = input.interviewerName ?? c.interviewerName;
+        c.interviewerRemark = input.interviewerRemark ?? c.interviewerRemark;
+        c.hireType = hireType || c.hireType;
+        c.visaNumber = input.visaNumber ?? c.visaNumber;
+        c.sponsorId = input.sponsorId ?? c.sponsorId;
+        c.visaCategory = input.visaCategory ?? c.visaCategory;
+        if (!c.status) {
+          c.status = "SELECTED";
+          c.statusUpdatedAt = now;
+          recordStatus(c.id, c.status, "Auto-set on import", "IMPORT", now);
+        }
+        c.updatedAt = now;
+        return { created: false, updated: true, candidate: c };
+      }
+    }
+    function changeStatusById(id, newStatus, note, source) {
+      const c = db.candidates.find(x => x.id === id);
+      if (!c) throw new Error("Candidate not found");
+      if (c.status !== newStatus) {
+        c.status = newStatus;
+        c.statusUpdatedAt = nowIso();
+        c.updatedAt = c.statusUpdatedAt;
+        recordStatus(c.id, newStatus, note||"", source||"MANUAL", c.statusUpdatedAt);
+      }
+      return c;
+    }
+    function changeStatusByPassport(passport, newStatus, note, source) {
+      const c = findByPassport(passport);
+      if (!c) throw new Error("Candidate not found: " + passport);
+      return changeStatusById(c.id, newStatus, note, source);
+    }
+    function deleteCandidate(id) {
+      const c = db.candidates.find(x => x.id === id);
+      if (!c) return;
+      if (!confirm(`Delete ${c.candidateName} (${c.passportNumber})? This will remove their history as well.`)) return;
+      db.candidates = db.candidates.filter(x => x.id !== id);
+      db.updates = db.updates.filter(u => u.candidateId !== id);
+      onDataChanged();
+      refreshAll();
+    }
+
+    // ==============================
+    // XLSX HELPERS
+    // ==============================
+    function readSheetRows(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = reader.result;
+            const wb = XLSX.read(data, { type: 'array', cellDates: true });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+            resolve(rows);
+          } catch (e) { reject(e); }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    function normalizeHeader(h) { return String(h||"").trim().toLowerCase(); }
+    function buildHeaderIndex(headers, synonyms) {
+      const idxMap = {};
+      const low = headers.map(normalizeHeader);
+      for (const [key, names] of Object.entries(synonyms)) {
+        let found = null;
+        for (const name of names) {
+          const at = low.indexOf(name);
+          if (at !== -1) { found = at; break; }
+        }
+        idxMap[key] = found;
+      }
+      return idxMap;
+    }
+    function valAt(row, idx) { return (idx == null || idx < 0) ? null : row[idx]; }
+
+    // ==============================
+    // IMPORTS
+    // ==============================
+    async function uploadInterviews() {
+      const f = document.getElementById('interviewFile').files[0];
+      if (!f) return alert('Select a .xlsx file');
+      const report = { rowsRead:0, created:0, updated:0, statusChanged:0, errors:[], notFound:[] };
+      try {
+        const rows = await readSheetRows(f);
+        if (!rows.length) throw new Error("Empty sheet");
+        const headers = rows[0];
+        const synonyms = {
+          interviewDate: ['interview date','date'],
+          agencyName: ['agency','agency name'],
+          location: ['location'],
+          candidateName: ['candidate name','name'],
+          passportNumber: ['passport number','passport'],
+          positionOffered: ['position offered','position'],
+          salaryOffered: ['salary offered','salary'],
+          contactDetails: ['contact details','contact','phone','mobile'],
+          interviewScore: ['interview score (%)','interview score','score'],
+          interviewerName: ['interviewer name'],
+          interviewerRemark: ['interviewer remark','remark','remarks'],
+          hireType: ['hire type','new/rehire','rehire','hire','employment type']
+        };
+        const col = buildHeaderIndex(headers, synonyms);
+
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.every(c => c==null || c==='')) continue;
+          report.rowsRead++;
+          try {
+            const hireTypeParsed = parseHireType(valAt(row, col.hireType)) || "NEW_HIRE";
+            const obj = {
+              interviewDate: parseMaybeDate(valAt(row, col.interviewDate)),
+              agencyName: safeStr(valAt(row, col.agencyName)),
+              location: safeStr(valAt(row, col.location)),
+              candidateName: safeStr(valAt(row, col.candidateName)),
+              passportNumber: safeStr(valAt(row, col.passportNumber)),
+              positionOffered: safeStr(valAt(row, col.positionOffered)),
+              salaryOffered: numeric(valAt(row, col.salaryOffered)),
+              contactDetails: safeStr(valAt(row, col.contactDetails)),
+              interviewScore: intOrNull(valAt(row, col.interviewScore)),
+              interviewerName: safeStr(valAt(row, col.interviewerName)),
+              interviewerRemark: safeStr(valAt(row, col.interviewerRemark)),
+              hireType: hireTypeParsed
+            };
+            const res = upsertCandidateByPassport(obj);
+            if (res.created) report.created++;
+            if (res.updated) report.updated++;
+          } catch (e) { report.errors.push(`Row ${r+1}: ${e.message}`); }
+        }
+        onDataChanged(); showImportReport('importResult1', report); refreshAll();
+      } catch (e) {
+        report.errors.push("File error: " + e.message);
+        showImportReport('importResult1', report);
+      }
+    }
+
+    async function uploadVisa() {
+      const f = document.getElementById('visaFile').files[0];
+      if (!f) return alert('Select a .xlsx file');
+      const report = { rowsRead:0, created:0, updated:0, statusChanged:0, errors:[], notFound:[] };
+      try {
+        const rows = await readSheetRows(f);
+        if (!rows.length) throw new Error("Empty sheet");
+        const headers = rows[0];
+        const synonyms = {
+          passportNumber: ['passport number','passport'],
+          status: ['status','visa status','current status'],
+          visaNumber: ['visa number','visa no','visa#','visa #','v.no','v no'],
+          sponsorId: ['sponsor id','sponsorid','sponsor','kafeel id','iqama sponsor id','sponser id'],
+          visaCategory: ['visa category','category','visa type','type'],
+          note: ['note','remarks','remark','comments'],
+          hireType: ['hire type','new/rehire','rehire','hire','employment type']
+        };
+        const col = buildHeaderIndex(headers, synonyms);
+
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.every(c => c==null || c==='')) continue;
+          report.rowsRead++;
+          try {
+            const passport = safeStr(valAt(row, col.passportNumber));
+            const st = parseStatus(valAt(row, col.status));
+            const note = safeStr(valAt(row, col.note));
+            const visaNumber = safeStr(valAt(row, col.visaNumber));
+            const sponsorId = safeStr(valAt(row, col.sponsorId));
+            const visaCategory = safeStr(valAt(row, col.visaCategory));
+            const hireTypeParsed = parseHireType(valAt(row, col.hireType));
+
+            if (!passport) { report.errors.push(`Row ${r+1}: Missing passport number`); continue; }
+            const cand = findByPassport(passport);
+            if (!cand) { report.notFound.push(`Row ${r+1} passport ${passport} not found`); continue; }
+
+            // Update fields if provided
+            const patch = {
+              passportNumber: cand.passportNumber,
+              visaNumber: visaNumber || cand.visaNumber,
+              sponsorId: sponsorId || cand.sponsorId,
+              visaCategory: visaCategory || cand.visaCategory,
+              hireType: hireTypeParsed || cand.hireType
+            };
+            upsertCandidateByPassport(patch);
+
+            if (st) {
+              const before = cand.status;
+              changeStatusByPassport(passport, st, note, "IMPORT");
+              const after = findByPassport(passport)?.status;
+              if (before !== after) report.statusChanged++;
+            }
+          } catch (e) { report.errors.push(`Row ${r+1}: ${e.message}`); }
+        }
+        onDataChanged(); showImportReport('importResult2', report); refreshAll();
+      } catch (e) {
+        report.errors.push("File error: " + e.message);
+        showImportReport('importResult2', report);
+      }
+    }
+
+    function showImportReport(elId, j) {
+      const el = document.getElementById(elId);
+      el.innerHTML = `
+        <div>Rows read: <b>${j.rowsRead||0}</b>, Created: <b>${j.created||0}</b>, Updated: <b>${j.updated||0}</b>, Status changed: <b>${j.statusChanged||0}</b></div>
+        ${j.errors && j.errors.length ? `<div style="color:var(--bad);">Errors:<br>${j.errors.map(e=>`- ${e}`).join('<br>')}</div>` : ''}
+        ${j.notFound && j.notFound.length ? `<div style="color:var(--warn);">Not found:<br>${j.notFound.map(e=>`- ${e}`).join('<br>')}</div>` : ''}
+      `;
+    }
+
+    // ==============================
+    // MANUAL ENTRY
+    // ==============================
+    function manualSave() {
+      const body = {
+        interviewDate: parseUserDateInput(safeStr(document.getElementById('m_interviewDate').value)) || null,
+        agencyName: safeStr(document.getElementById('m_agency').value),
+        location: safeStr(document.getElementById('m_location').value),
+        candidateName: safeStr(document.getElementById('m_name').value),
+        passportNumber: safeStr(document.getElementById('m_passport').value),
+        positionOffered: safeStr(document.getElementById('m_position').value),
+        salaryOffered: safeStr(document.getElementById('m_salary').value) ? Number(document.getElementById('m_salary').value) : null,
+        contactDetails: safeStr(document.getElementById('m_contact').value),
+        interviewScore: safeStr(document.getElementById('m_score').value) ? Number(document.getElementById('m_score').value) : null,
+        interviewerName: safeStr(document.getElementById('m_interviewer').value),
+        interviewerRemark: safeStr(document.getElementById('m_remark').value),
+        hireType: document.getElementById('m_hireType').value
+      };
+      if (!body.passportNumber) { alert('Passport Number is required'); return; }
+      const res = upsertCandidateByPassport(body);
+      onDataChanged();
+      document.getElementById('manualResult').textContent = res.created ? 'Candidate added.' : 'Candidate updated.';
+      refreshAll();
+    }
+    function manualClear() {
+      ['m_interviewDate','m_agency','m_location','m_name','m_passport','m_position','m_salary','m_contact','m_score','m_interviewer','m_remark'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('m_hireType').value = 'NEW_HIRE';
+      document.getElementById('manualResult').textContent = '';
+    }
+
+    // ==============================
+    // FILTERS & TABLES (Manage)
+    // ==============================
+    function uniqueAgencies() {
+      return [...new Set(db.candidates.map(c => c.agencyName || '').filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    }
+    function fillAgencyFilters() {
+      const agencySelects = ['f_agency','x_agency'];
+      const agencies = uniqueAgencies();
+      agencySelects.forEach(id => {
+        const sel = document.getElementById(id);
+        const first = sel.firstElementChild; // "All Agencies"
+        sel.innerHTML = '';
+        sel.appendChild(first);
+        agencies.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a; opt.textContent = a;
+          sel.appendChild(opt);
+        });
+      });
+    }
+    function fillStatusFilter() {
+      const sel = document.getElementById('f_status');
+      const first = sel.firstElementChild;
+      sel.innerHTML = '';
+      sel.appendChild(first);
+      STATUS_LIST.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s.replaceAll('_',' ');
+        sel.appendChild(opt);
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('f_agency').value = '';
+      document.getElementById('f_status').value = '';
+      document.getElementById('f_hire').value = '';
+      document.getElementById('f_search').value = '';
+      loadCandidates();
+    }
+
+    function loadCandidates() {
+      const agency = safeStr(document.getElementById('f_agency').value);
+      const status = safeStr(document.getElementById('f_status').value);
+      const hire = safeStr(document.getElementById('f_hire').value);
+      const q = safeStr(document.getElementById('f_search').value).toLowerCase();
+
+      let rows = [...db.candidates];
+      if (agency) rows = rows.filter(r => r.agencyName === agency);
+      if (status) rows = rows.filter(r => r.status === status);
+      if (hire) rows = rows.filter(r => r.hireType === hire);
+      if (q) {
+        rows = rows.filter(r =>
+          safeStr(r.candidateName).toLowerCase().includes(q) ||
+          safeStr(r.passportNumber).toLowerCase().includes(q) ||
+          safeStr(r.location).toLowerCase().includes(q) ||
+          safeStr(r.positionOffered).toLowerCase().includes(q) ||
+          safeStr(r.visaNumber).toLowerCase().includes(q)
+        );
+      }
+      rows.sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""));
+      renderCandidates(rows);
+    }
+
+    function renderCandidates(rows) {
+      const tb = document.querySelector('#candTable tbody');
+      tb.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.interviewDate? formatDMY(r.interviewDate):''}</td>
+          <td>${r.agencyName||''}</td>
+          <td>${r.location||''}</td>
+          <td>${r.candidateName||''}</td>
+          <td>${r.passportNumber||''}</td>
+          <td>${r.positionOffered||''}</td>
+          <td>${r.hireType||''}</td>
+          <td>${r.visaNumber||''}</td>
+          <td>${r.sponsorId||''}</td>
+          <td>${r.visaCategory||''}</td>
+          <td>${fmtMoney(r.salaryOffered)}</td>
+          <td>${r.interviewScore!=null?r.interviewScore+'%':''}</td>
+          <td><span class="status" style="background:${colorForStatus(r.status,0.08)}; color:${colorForStatus(r.status,1)}; border-color:${colorForStatus(r.status,0.25)}">${r.status}</span></td>
+          <td class="small">${r.statusUpdatedAt? formatDMYTime(r.statusUpdatedAt) : ''}</td>
+          <td class="actions">
+            <button class="btn secondary" onclick='openEdit(${r.id})'>Edit</button>
+            <button class="btn" onclick='promptStatus(${r.id})'>Update</button>
+            <button class="btn secondary" onclick='showHistory(${r.id})'>History</button>
+            <button class="btn danger" onclick='deleteCandidate(${r.id})'>Delete</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    // ==============================
+    // EXCEPTIONS PAGE
+    // ==============================
+    function renderExceptions() {
+      const agency = safeStr(document.getElementById('x_agency').value);
+      const q = safeStr(document.getElementById('x_search').value).toLowerCase();
+      const exceptionStatuses = new Set(["HOLD","BACKOUT","MEDICAL_UNFIT"]);
+      let rows = db.candidates.filter(c => exceptionStatuses.has(c.status));
+      if (agency) rows = rows.filter(r => r.agencyName === agency);
+      if (q) {
+        rows = rows.filter(r =>
+          safeStr(r.candidateName).toLowerCase().includes(q) ||
+          safeStr(r.passportNumber).toLowerCase().includes(q) ||
+          safeStr(r.positionOffered).toLowerCase().includes(q)
+        );
+      }
+      rows.sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""));
+
+      const tb = document.querySelector('#excTable tbody');
+      tb.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.agencyName||''}</td>
+          <td>${r.candidateName||''}</td>
+          <td>${r.passportNumber||''}</td>
+          <td>${r.positionOffered||''}</td>
+          <td><span class="status" style="background:${colorForStatus(r.status,0.08)}; color:${colorForStatus(r.status,1)}; border-color:${colorForStatus(r.status,0.25)}">${r.status}</span></td>
+          <td class="small">${r.statusUpdatedAt? formatDMYTime(r.statusUpdatedAt) : ''}</td>
+          <td class="actions">
+            <button class="btn secondary" onclick='openEdit(${r.id})'>Edit</button>
+            <button class="btn" onclick='promptStatus(${r.id})'>Change</button>
+            <button class="btn secondary" onclick='showHistory(${r.id})'>History</button>
+            <button class="btn danger" onclick='deleteCandidate(${r.id})'>Delete</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    // ==============================
+    // DASHBOARD
+    // ==============================
+    let statusChart, allotChart, agencyStatusChart, hireTypeChart;
+
+    function computeStats() {
+      // perStatus
+      const perStatus = {};
+      STATUS_LIST.forEach(s => perStatus[s] = 0);
+      db.candidates.forEach(c => { if (c.status && perStatus[c.status] != null) perStatus[c.status]++; });
+
+      // perAgencyStatus
+      const perAgencyStatus = []; // [{agency, status, count}]
+      const agencyMap = {}; // agency -> status -> count
+      db.candidates.forEach(c => {
+        const a = c.agencyName || '—';
+        if (!agencyMap[a]) agencyMap[a] = {};
+        agencyMap[a][c.status] = (agencyMap[a][c.status] || 0) + 1;
+      });
+      Object.entries(agencyMap).forEach(([agency, stMap]) => {
+        STATUS_LIST.forEach(st => {
+          const count = stMap[st] || 0;
+          if (count > 0) perAgencyStatus.push({ agency, status: st, count });
+        });
+      });
+
+      // visas allotted per agency (visaNumber present)
+      const allotAgency = {}; // agency -> count
+      db.candidates.forEach(c => {
+        const a = c.agencyName || '—';
+        if (!allotAgency[a]) allotAgency[a] = 0;
+        if (safeStr(c.visaNumber)) allotAgency[a]++;
+      });
+      const visasAllottedPerAgency = Object.entries(allotAgency)
+        .map(([agency, count]) => ({agency, count}))
+        .sort((a,b)=>b.count - a.count);
+
+      // hire type overall and per agency
+      const hireOverall = { NEW_HIRE:0, REHIRE:0 };
+      const hireAgency = {}; // agency -> {NEW_HIRE, REHIRE}
+      db.candidates.forEach(c => {
+        const ht = c.hireType || "NEW_HIRE";
+        hireOverall[ht] = (hireOverall[ht]||0)+1;
+        const a = c.agencyName || '—';
+        if (!hireAgency[a]) hireAgency[a] = { NEW_HIRE:0, REHIRE:0 };
+        hireAgency[a][ht] += 1;
+      });
+
+      // last update per agency
+      const lastUpdatePerAgency = [];
+      const lastMap = {};
+      const candById = Object.fromEntries(db.candidates.map(c => [c.id, c]));
+      db.updates.forEach(u => {
+        const c = candById[u.candidateId];
+        if (!c) return;
+        const a = c.agencyName || '—';
+        if (!lastMap[a] || (u.timestamp > lastMap[a])) lastMap[a] = u.timestamp;
+      });
+      const now = new Date();
+      const allAgencies = new Set(db.candidates.map(c => c.agencyName || '—'));
+      allAgencies.forEach(a => {
+        const ts = lastMap[a] || null;
+        const dt = ts ? new Date(ts) : null;
+        const days = dt ? Math.floor((now - dt)/(1000*60*60*24)) : 999;
+        lastUpdatePerAgency.push({ agency:a, lastUpdate:ts, daysSince:days, overdue: days > 2 });
+      });
+
+      return { perStatus, perAgencyStatus, visasAllottedPerAgency, hireOverall, hireAgency, lastUpdatePerAgency };
+    }
+
+    function loadDashboard() {
+      const s = computeStats();
+      // KPIs
+      document.getElementById('d_total').textContent = db.candidates.length;
+      document.getElementById('d_allotted').textContent = db.candidates.filter(c => safeStr(c.visaNumber)).length;
+      document.getElementById('d_new').textContent = s.hireOverall.NEW_HIRE || 0;
+      document.getElementById('d_re').textContent = s.hireOverall.REHIRE || 0;
+
+      // Status donut
+      const labels = Object.keys(s.perStatus);
+      const values = Object.values(s.perStatus);
+      const colors = labels.map(st => colorForStatus(st));
+      if (statusChart) statusChart.destroy();
+      statusChart = new Chart(document.getElementById('statusChart'), {
+        type:'doughnut',
+        data:{ labels, datasets:[{ data:values, backgroundColor: colors }] },
+        options:{ plugins:{ legend:{ position:'bottom' }}, cutout:'60%' }
+      });
+
+      // Allotted per agency
+      const aLabels = s.visasAllottedPerAgency.map(x=>x.agency);
+      const aVals = s.visasAllottedPerAgency.map(x=>x.count);
+      if (allotChart) allotChart.destroy();
+      allotChart = new Chart(document.getElementById('allotChart'), {
+        type:'bar',
+        data:{ labels:aLabels, datasets:[{ label:'Visa Allotted', data:aVals, backgroundColor:'rgba(29,78,216,0.7)' }] },
+        options:{ plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true }}}
+      });
+
+      // Agency vs Status stacked
+      const agencies = [...new Set(s.perAgencyStatus.map(r=>r.agency))];
+      const datasets = STATUS_LIST.map(st => ({
+        label: st,
+        data: agencies.map(a => {
+          const hit = s.perAgencyStatus.find(r => r.agency===a && r.status===st);
+          return hit ? hit.count : 0;
+        }),
+        backgroundColor: colorForStatus(st, 0.8)
+      }));
+      if (agencyStatusChart) agencyStatusChart.destroy();
+      agencyStatusChart = new Chart(document.getElementById('agencyStatusChart'), {
+        type:'bar',
+        data:{ labels: agencies, datasets },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' }}, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true }}}
+      });
+
+      // Hire Type by Agency
+      const agencies2 = Object.keys(s.hireAgency);
+      const newData = agencies2.map(a => s.hireAgency[a].NEW_HIRE || 0);
+      const reData = agencies2.map(a => s.hireAgency[a].REHIRE || 0);
+      if (hireTypeChart) hireTypeChart.destroy();
+      hireTypeChart = new Chart(document.getElementById('hireTypeChart'), {
+        type:'bar',
+        data:{
+          labels:agencies2,
+          datasets:[
+            { label:'New-Hire', data:newData, backgroundColor:'rgba(37,99,235,0.8)' },
+            { label:'Re-Hire', data:reData, backgroundColor:'rgba(249,115,22,0.8)' }
+          ]
+        },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' }}, scales:{ y:{ beginAtZero:true }}}
+      });
+
+      // Health
+      renderAgencyHealth(s.lastUpdatePerAgency);
+    }
+
+    function renderAgencyHealth(rows) {
+      const el = document.getElementById('agencyHealth');
+      if (!rows || !rows.length) { el.textContent = 'No updates yet.'; return; }
+      const sorted = [...rows].sort((a,b) => b.daysSince - a.daysSince);
+      el.innerHTML = sorted.map(r => {
+        const days = r.daysSince ?? 999;
+        const cls = days > 2 ? 'overdue' : 'good';
+        const last = r.lastUpdate ? formatDMYTime(r.lastUpdate) : '—';
+        return `<div class="health-item">
+                  <div><b>${r.agency||'—'}</b><div class="muted">Last update: ${last}</div></div>
+                  <div class="${cls}">${days} day(s)</div>
+                </div>`;
+      }).join('');
+    }
+
+    // ==============================
+    // EDIT / STATUS / HISTORY MODALS
+    // ==============================
+    function openEdit(id) {
+      const r = db.candidates.find(c => c.id === id);
+      if (!r) return;
+      const html = `
+        <div class="grid3">
+          <div><label>Interview Date (dd-mmm-yy)</label><input id="e_interviewDate" type="text" value="${r.interviewDate?formatDMY(r.interviewDate):''}" placeholder="06-Sep-25"></div>
+          <div><label>Agency</label><input id="e_agency" value="${r.agencyName||''}"></div>
+          <div><label>Location</label><input id="e_location" value="${r.location||''}"></div>
+
+          <div><label>Name</label><input id="e_name" value="${r.candidateName||''}"></div>
+          <div><label>Passport</label><input id="e_passport" value="${r.passportNumber||''}"></div>
+          <div><label>Hire Type</label>
+            <select id="e_hireType">
+              <option value="NEW_HIRE" ${r.hireType==='NEW_HIRE'?'selected':''}>New-Hire</option>
+              <option value="REHIRE" ${r.hireType==='REHIRE'?'selected':''}>Re-Hire</option>
+            </select>
+          </div>
+
+          <div><label>Position</label><input id="e_position" value="${r.positionOffered||''}"></div>
+          <div><label>Salary</label><input id="e_salary" type="number" step="0.01" value="${r.salaryOffered??''}"></div>
+          <div><label>Contact</label><input id="e_contact" value="${r.contactDetails||''}"></div>
+
+          <div><label>Score (%)</label><input id="e_score" type="number" min="0" max="100" value="${r.interviewScore??''}"></div>
+          <div><label>Interviewer</label><input id="e_interviewer" value="${r.interviewerName||''}"></div>
+          <div><label>Remark</label><input id="e_remark" value="${r.interviewerRemark||''}"></div>
+
+          <div><label>Visa Number</label><input id="e_visaNo" value="${r.visaNumber||''}"></div>
+          <div><label>Sponsor ID</label><input id="e_sponsorId" value="${r.sponsorId||''}"></div>
+          <div><label>Visa Category</label><input id="e_visaCat" value="${r.visaCategory||''}"></div>
+        </div>
+      `;
+      showModal('Edit Candidate', html, `
+        <button class="btn secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn" onclick="saveEdit(${id})">Save</button>
+      `);
+    }
+    function saveEdit(id) {
+      const c = db.candidates.find(x => x.id === id);
+      if (!c) return;
+      const patch = {
+        interviewDate: parseUserDateInput(safeStr(document.getElementById('e_interviewDate').value)) || null,
+        agencyName: safeStr(document.getElementById('e_agency').value),
+        location: safeStr(document.getElementById('e_location').value),
+        candidateName: safeStr(document.getElementById('e_name').value),
+        passportNumber: safeStr(document.getElementById('e_passport').value),
+        hireType: document.getElementById('e_hireType').value,
+        positionOffered: safeStr(document.getElementById('e_position').value),
+        salaryOffered: safeStr(document.getElementById('e_salary').value) ? Number(document.getElementById('e_salary').value) : null,
+        contactDetails: safeStr(document.getElementById('e_contact').value),
+        interviewScore: safeStr(document.getElementById('e_score').value) ? Number(document.getElementById('e_score').value) : null,
+        interviewerName: safeStr(document.getElementById('e_interviewer').value),
+        interviewerRemark: safeStr(document.getElementById('e_remark').value),
+        visaNumber: safeStr(document.getElementById('e_visaNo').value),
+        sponsorId: safeStr(document.getElementById('e_sponsorId').value),
+        visaCategory: safeStr(document.getElementById('e_visaCat').value)
+      };
+      const newPass = normalizePassport(patch.passportNumber);
+      const other = db.candidates.find(x => x.id !== id && normalizePassport(x.passportNumber) === newPass);
+      if (other) return alert('Another candidate already has this passport number.');
+      Object.assign(c, patch);
+      c.updatedAt = nowIso();
+      onDataChanged(); closeModal(); refreshAll();
+    }
+
+    function promptStatus(id) {
+      const up = prompt("New Status:\n" + STATUS_LIST.join(", "));
+      if (!up) return;
+      const status = up.toUpperCase().replace(/\s+/g,'_');
+      if (!STATUS_LIST.includes(status)) return alert('Invalid status');
+      const note = prompt("Note (optional):") || "";
+      changeStatusById(id, status, note, "MANUAL");
+      onDataChanged(); refreshAll();
+    }
+
+    function showHistory(id) {
+      const c = db.candidates.find(x => x.id === id);
+      const list = db.updates.filter(u => u.candidateId === id).sort((a,b)=> (b.timestamp||'').localeCompare(a.timestamp||''));
+      const html = `
+        <div class="row" style="gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <span class="chip"><b>${c.candidateName}</b> ${c.passportNumber}</span>
+          <span class="chip"><b>Agency</b> ${c.agencyName||'—'}</span>
+          <span class="chip"><b>Status</b> ${c.status}</span>
+        </div>
+        <div class="scroll" style="max-height:360px;">
+          <table style="width:100%;">
+            <thead><tr><th style="width:160px;">Time</th><th style="width:160px;">Status</th><th>Note</th><th style="width:120px;">Source</th></tr></thead>
+            <tbody>
+              ${list.map(u => `
+                <tr>
+                  <td class="small">${u.timestamp ? formatDMYTime(u.timestamp) : ''}</td>
+                  <td><span class="status" style="background:${colorForStatus(u.status,0.08)}; color:${colorForStatus(u.status,1)}; border-color:${colorForStatus(u.status,0.25)}">${u.status}</span></td>
+                  <td class="small">${safeStr(u.note)}</td>
+                  <td class="small">${safeStr(u.source)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      showModal('Status History', html, `<button class="btn" onclick="closeModal()">Close</button>`);
+    }
+
+    function showModal(title, bodyHTML, footerHTML) {
+      const root = document.getElementById('modal-root');
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-card">
+          <div class="modal-header">
+            <b>${title}</b>
+            <button class="btn secondary" onclick="closeModal()">Close</button>
+          </div>
+          <div class="modal-body">${bodyHTML}</div>
+          <div class="modal-footer">${footerHTML}</div>
+        </div>
+      `;
+      root.innerHTML = '';
+      root.appendChild(modal);
+    }
+    function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+    // ==============================
+    // NAV / VIEWS
+    // ==============================
+    function setView(view) {
+      ['manage','exceptions','dashboard'].forEach(v => {
+        document.getElementById('view-'+v).classList.toggle('hidden', v !== view);
+        document.getElementById('tab-'+v).classList.toggle('active', v === view);
+      });
+      if (view === 'exceptions') { renderExceptions(); }
+      if (view === 'dashboard') { loadDashboard(); }
+    }
+
+    // ==============================
+    // BACKUP / RESTORE / CLEAR
+    // ==============================
+    function downloadBackup() {
+      const data = JSON.stringify(db, null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'visa-tracker-backup.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    async function restoreBackup() {
+      const f = document.getElementById('backupFile').files[0];
+      if (!f) return;
+      try {
+        const txt = await f.text();
+        const obj = JSON.parse(txt);
+        if (!obj || !obj.candidates || !obj.updates) throw new Error('Invalid backup file');
+        db = obj; onDataChanged(); refreshAll(); alert('Backup restored');
+      } catch (e) { alert('Restore failed: ' + e.message); }
+    }
+    function clearAll() {
+      if (!confirm('This will remove all data from your browser. Continue?')) return;
+      db = defaultDB(); onDataChanged(); refreshAll();
+    }
+
+    // ==============================
+    // GITHUB SYNC
+    // ==============================
+    function getGitHubConfig() {
+      try {
+        const raw = localStorage.getItem(GITHUB_CFG_KEY);
+        return raw ? JSON.parse(raw) : { owner:'', repo:'', branch:'main', path:'data/visa-tracker.json', token:'', autoSave:false, lastSha:null };
+      } catch(e) {
+        return { owner:'', repo:'', branch:'main', path:'data/visa-tracker.json', token:'', autoSave:false, lastSha:null };
+      }
+    }
+    function setGitHubConfig(cfg) {
+      localStorage.setItem(GITHUB_CFG_KEY, JSON.stringify(cfg));
+      updateGhStatus('idle');
+    }
+    function b64EncodeUtf8(str){return btoa(unescape(encodeURIComponent(str)));}
+    function b64DecodeUtf8(str){return decodeURIComponent(escape(atob(str)));}
+
+    let ghSaveTimer = null;
+    function scheduleGitHubSave() {
+      clearTimeout(ghSaveTimer);
+      ghSaveTimer = setTimeout(() => githubSave().catch(()=>{}), 1500);
+    }
+    function updateGhStatus(state, msg='') {
+      const el = document.getElementById('gh_status');
+      const cfg = getGitHubConfig();
+      if (!cfg.token || !cfg.owner || !cfg.repo) {
+        el.textContent = 'GitHub: Not configured';
+        return;
+      }
+      if (state === 'saving') el.textContent = 'GitHub: Saving...';
+      else if (state === 'saved') el.textContent = 'GitHub: Saved';
+      else if (state === 'error') el.textContent = `GitHub: Error ${msg?'- '+msg:''}`;
+      else el.textContent = cfg.autoSave ? 'GitHub: Auto-Save ON' : 'GitHub: Ready';
+    }
+
+    async function githubGetFile(cfg) {
+      const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}?ref=${encodeURIComponent(cfg.branch||'main')}`;
+      const res = await fetch(url, { headers: { Accept:'application/vnd.github+json', Authorization: `Bearer ${cfg.token}` } });
+      if (res.status === 404) return { exists:false, sha:null, content:null };
+      if (!res.ok) throw new Error(`GET ${res.status}`);
+      const j = await res.json();
+      return { exists:true, sha:j.sha, content: j.content ? b64DecodeUtf8(j.content) : null };
+    }
+
+    async function githubSave() {
+      const cfg = getGitHubConfig();
+      if (!cfg.token || !cfg.owner || !cfg.repo || !cfg.path) { updateGhStatus('error','missing config'); return; }
+      try {
+        updateGhStatus('saving');
+        // Check existing
+        let sha = null;
+        try {
+          const got = await githubGetFile(cfg);
+          if (got.exists) sha = got.sha;
+        } catch (e) {
+          // ignore GET error, try creating
+        }
+        const content = b64EncodeUtf8(JSON.stringify(db, null, 2));
+        const body = {
+          message: `Visa Tracker Update ${formatDMYTime(new Date().toISOString())}`,
+          content,
+          branch: cfg.branch || 'main'
+        };
+        if (sha) body.sha = sha;
+
+        const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+        const res = await fetch(url, {
+          method:'PUT',
+          headers: {
+            Accept:'application/vnd.github+json',
+            Authorization: `Bearer ${cfg.token}`,
+            'Content-Type':'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(()=>({message:res.statusText}));
+          throw new Error(err.message || `PUT ${res.status}`);
+        }
+        const j = await res.json();
+        const newSha = j.content?.sha || null;
+        setGitHubConfig({...cfg, lastSha:newSha});
+        updateGhStatus('saved');
+      } catch (e) {
+        updateGhStatus('error', e.message || 'save failed');
+        throw e;
+      }
+    }
+
+    async function githubLoad() {
+      const cfg = getGitHubConfig();
+      if (!cfg.token || !cfg.owner || !cfg.repo || !cfg.path) { alert('Configure GitHub first'); return; }
+      try {
+        updateGhStatus('saving');
+        const got = await githubGetFile(cfg);
+        if (!got.exists || !got.content) { alert('File not found on GitHub'); updateGhStatus('error','not found'); return; }
+        const obj = JSON.parse(got.content);
+        if (!obj || !Array.isArray(obj.candidates) || !Array.isArray(obj.updates)) throw new Error('Invalid data file');
+        db = obj; onDataChanged(); refreshAll(); updateGhStatus('saved');
+        alert('Loaded from GitHub');
+      } catch (e) {
+        updateGhStatus('error', e.message || 'load failed');
+        alert('GitHub load failed: ' + (e.message||''));
+      }
+    }
+
+    function openGitHubSync() {
+      const cfg = getGitHubConfig();
+      const html = `
+        <div class="grid2">
+          <div><label>Owner</label><input id="gh_owner" value="${cfg.owner||''}" placeholder="your-github-username-or-org"></div>
+          <div><label>Repo</label><input id="gh_repo" value="${cfg.repo||''}" placeholder="your-repo"></div>
+          <div><label>Branch</label><input id="gh_branch" value="${cfg.branch||'main'}" placeholder="main"></div>
+          <div><label>Path (JSON file)</label><input id="gh_path" value="${cfg.path||'data/visa-tracker.json'}" placeholder="data/visa-tracker.json"></div>
+          <div><label>Token (Fine-grained PAT)</label><input id="gh_token" type="password" value="${cfg.token||''}" placeholder="ghp_..."></div>
+          <div><label>Auto-Save to GitHub</label>
+            <select id="gh_auto"><option value="false" ${!cfg.autoSave?'selected':''}>OFF</option><option value="true" ${cfg.autoSave?'selected':''}>ON</option></select>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:8px;">
+          Create a fine-grained personal access token with Content: Read+Write for this repo.
+          Token is stored in your browser only (localStorage). Do not share this page if token is filled.
+        </p>
+      `;
+      showModal('GitHub Sync', html, `
+        <button class="btn secondary" onclick="closeModal()">Close</button>
+        <button class="btn secondary" onclick="(function(){ const c=getGitHubConfig(); document.getElementById('gh_token').type = (document.getElementById('gh_token').type==='password'?'text':'password'); })()">Show/Hide Token</button>
+        <button class="btn" onclick="saveGitHubConfigFromModal()">Save Config</button>
+        <button class="btn orange" onclick="githubSave()">Save Now</button>
+        <button class="btn" onclick="githubLoad()">Load from GitHub</button>
+      `);
+    }
+    function saveGitHubConfigFromModal() {
+      const cfg = {
+        owner: safeStr(document.getElementById('gh_owner').value),
+        repo: safeStr(document.getElementById('gh_repo').value),
+        branch: safeStr(document.getElementById('gh_branch').value) || 'main',
+        path: safeStr(document.getElementById('gh_path').value) || 'data/visa-tracker.json',
+        token: safeStr(document.getElementById('gh_token').value),
+        autoSave: document.getElementById('gh_auto').value === 'true',
+        lastSha: getGitHubConfig().lastSha || null
+      };
+      if (!cfg.owner || !cfg.repo || !cfg.token) {
+        if (!confirm('Owner/Repo/Token missing. Save anyway?')) return;
+      }
+      setGitHubConfig(cfg);
+      alert('GitHub config saved');
+      updateGhStatus('idle');
+    }
+
+    // ==============================
+    // INIT / REFRESH
+    // ==============================
+    function refreshAll() {
+      fillAgencyFilters();
+      fillStatusFilter();
+      loadCandidates();
+      if (!document.getElementById('view-exceptions').classList.contains('hidden')) renderExceptions();
+      if (!document.getElementById('view-dashboard').classList.contains('hidden')) loadDashboard();
+    }
+    function init() {
+      loadDB();
+      updateGhStatus('idle');
+      refreshAll();
+    }
+    init();
+  </script>
+</body>
+</html>
