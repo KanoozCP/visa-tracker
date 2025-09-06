@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Overseas Recruitment & Visa Tracking — Modern UI + GitHub Sync + Login</title>
+  <title>Recruitment & Visa Tracking — Modern UI + GitHub Sync</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -39,7 +39,7 @@
     .topbar {
       width:100%;
       margin:0 auto;
-      padding:10px 12px;
+      padding:10px 16px;
       display:flex; align-items:center; gap:12px;
     }
     .logo { width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border); }
@@ -49,16 +49,16 @@
 
     /* Tabs */
     .tabs { border-top:1px solid var(--border); background:#fff; }
-    .tabs-inner { width:100%; margin:0 auto; padding:8px 12px; display:flex; gap:8px; align-items:center; }
+    .tabs-inner { width:100%; margin:0 auto; padding:8px 16px; display:flex; gap:8px; align-items:center; }
     .tab {
       border:1px solid var(--border);
-      background:#fff; color:#000;
+      background:#fff; color:var(--text);
       padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600;
     }
     .tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 
     /* Main Container */
-    .container { width:100%; margin:0 auto; padding:10px 10px; }
+    .container { width:100%; margin:0 auto; padding:12px 12px; }
 
     /* Cards/Sections */
     section.card {
@@ -66,7 +66,7 @@
       border:1px solid var(--border);
       border-radius:14px;
       padding:12px;
-      margin-bottom:10px;
+      margin-bottom:12px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.03);
     }
     section.card h2 { margin:0 0 6px 0; font-size:18px; }
@@ -74,15 +74,15 @@
     .muted { color:var(--muted); font-size:12px; }
 
     /* Inputs & Buttons */
-    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
-    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
-    .grid4 { display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    .grid4 { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
     @media (max-width: 1280px) { .grid4 { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 640px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
 
     label { font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
-    input[type="text"], input[type="password"], input[type="number"], select, textarea {
+    input[type="text"], input[type="number"], select, textarea {
       background:#fff; color:var(--text);
       border:1px solid var(--border);
       border-radius:8px; padding:9px 10px; width:100%;
@@ -94,7 +94,7 @@
       color:#fff; border:none; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:700;
     }
     .btn:hover { background:var(--primary-600); }
-    .btn.secondary { background:#fff; color:#000; border:1px solid var(--border); }
+    .btn.secondary { background:#fff; color:var(--text); border:1px solid var(--border); }
     .btn.orange { background:var(--accent); }
     .btn.orange:hover { background:var(--accent-600); }
     .btn.danger { background:var(--bad); }
@@ -127,7 +127,7 @@
     .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px; }
     .chip b { color: var(--primary); }
 
-    /* Hide helper */
+    /* Hide views helper */
     .hidden { display:none; }
 
     /* Section headings */
@@ -137,57 +137,9 @@
     }
 
     .footer-note { color:var(--muted); font-size:12px; text-align:center; margin:14px 0 8px; }
-
-    /* Auth overlay */
-    .auth-overlay {
-      position:fixed; inset:0; z-index:2000;
-      background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(29,78,216,0.06), transparent 60%),
-        radial-gradient(1000px 700px at 80% 80%, rgba(249,115,22,0.06), transparent 60%),
-        #fff;
-      display:flex; align-items:center; justify-content:center; padding:16px;
-    }
-    .auth-card {
-      width: 100%; max-width: 420px;
-      background:#fff; border:1px solid var(--border); border-radius:14px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-      padding:16px;
-    }
-    .auth-logo { width:64px; height:64px; border-radius:12px; border:1px solid var(--border); object-fit:cover; }
-    .auth-title { margin:8px 0 0 0; font-size:18px; font-weight:800; }
-    .auth-sub { margin:0; color:var(--muted); font-size:12px; }
-    .auth-input { height:44px; } /* Ensures username/password consistent size */
   </style>
 </head>
 <body>
-  <!-- Login Overlay -->
-  <div id="login-view" class="auth-overlay hidden" onclick="document.getElementById('login_user').focus()">
-    <div class="auth-card" onclick="event.stopPropagation()">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <img class="auth-logo" src="https://lh3.googleusercontent.com/d/1oQr4RoR9ON5vK6U_oIN2hW0HdnpEloO8" alt="Department Logo" onerror="this.style.visibility='hidden'">
-        <div>
-          <h2 class="auth-title">Department Login</h2>
-          <p class="auth-sub">Enter credentials to access the Visa Tracker</p>
-        </div>
-      </div>
-
-      <div style="margin-top:12px;" class="grid2">
-        <div style="grid-column:1/-1;">
-          <label>Username</label>
-          <input id="login_user" class="auth-input" type="text" placeholder="Username" autocomplete="username" onkeydown="if(event.key==='Enter'){document.getElementById('login_pass').focus()}">
-        </div>
-        <div style="grid-column:1/-1;">
-          <label>Password</label>
-          <input id="login_pass" class="auth-input" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){doLogin()}">
-        </div>
-      </div>
-
-      <div class="row" style="justify-content:flex-end; margin-top:12px;">
-        <button class="btn" onclick="doLogin()">Login</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Header -->
   <header>
     <div class="topbar">
@@ -199,12 +151,11 @@
       <div style="flex:1"></div>
       <button class="btn secondary" onclick="openGitHubSync()">GitHub Sync</button>
       <span id="gh_status" class="muted">GitHub: Not configured</span>
-      <div style="width:4px;"></div>
+      <div style="width:8px;"></div>
       <button class="btn secondary" onclick="downloadBackup()">Backup</button>
       <label class="btn secondary" style="cursor:pointer;">
         Restore <input id="backupFile" type="file" accept=".json" style="display:none" onchange="restoreBackup()">
       </label>
-      <button class="btn secondary" onclick="logout()">Logout</button>
       <button class="btn danger" onclick="clearAll()">Clear</button>
     </div>
     <div class="tabs">
@@ -237,7 +188,7 @@
           <div id="importResult1" class="muted"></div>
         </div>
 
-        <hr style="border:0;border-top:1px solid var(--border); margin:10px 0;">
+        <hr style="border:0;border-top:1px solid var(--border); margin:12px 0;">
 
         <h3>Manual Entry / Quick Edit</h3>
         <div class="grid4">
@@ -295,7 +246,7 @@
           <h2>Compiled Candidates — Filters & Inline Actions</h2>
         </div>
 
-        <div class="row" style="gap:8px; margin-bottom:8px;">
+        <div class="row" style="gap:10px; margin-bottom:8px;">
           <div style="min-width:220px;">
             <label>Agency</label>
             <select id="f_agency" onchange="loadCandidates()">
@@ -358,7 +309,7 @@
         <h2>Exceptions — On Hold / Backout / Medical Unfit</h2>
         <p class="muted">Review and modify statuses to move candidates back into the active pipeline if needed.</p>
 
-        <div class="row" style="gap:8px; margin-bottom:8px;">
+        <div class="row" style="gap:10px; margin-bottom:8px;">
           <div style="min-width:220px;">
             <label>Agency</label>
             <select id="x_agency" onchange="renderExceptions()">
@@ -442,39 +393,9 @@
 
   <script>
     // ==============================
-    // AUTH (simple client-side gate)
-    // ==============================
-    const AUTH_KEY = 'visaTracker.auth';
-    function isLoggedIn() { return localStorage.getItem(AUTH_KEY) === 'ok'; }
-    function ensureAuth() {
-      const overlay = document.getElementById('login-view');
-      if (isLoggedIn()) {
-        overlay.classList.add('hidden');
-      } else {
-        overlay.classList.remove('hidden');
-        setTimeout(()=>document.getElementById('login_user').focus(), 50);
-      }
-    }
-    function doLogin() {
-      const u = (document.getElementById('login_user').value || '').trim();
-      const p = (document.getElementById('login_pass').value || '').trim();
-      if (u === '2025' && p === '2025') {
-        localStorage.setItem(AUTH_KEY, 'ok');
-        ensureAuth();
-        refreshAll();
-      } else {
-        alert('Invalid credentials');
-      }
-    }
-    function logout() {
-      localStorage.removeItem(AUTH_KEY);
-      ensureAuth();
-    }
-
-    // ==============================
     // CONSTANTS / ENUMS
     // ==============================
-    const DB_KEY = 'visaTracker.localDB.v3';
+    const DB_KEY = 'visaTracker.localDB.v3'; // bumped for new features
     const GITHUB_CFG_KEY = 'visaTracker.githubConfig.v1';
     const STATUS_LIST = [
       "SELECTED","HOLD","BACKOUT","PASSPORT_UNDER_RENEWAL","READY_FOR_MEDICAL",
@@ -502,7 +423,9 @@
     // DATABASE (localStorage)
     // ==============================
     let db = null;
-    function defaultDB() { return { nextId: 1, candidates: [], updates: [] }; }
+    function defaultDB() {
+      return { nextId: 1, candidates: [], updates: [] };
+    }
     function loadDB() {
       try {
         const raw = localStorage.getItem(DB_KEY);
@@ -567,6 +490,7 @@
         return `${v.getFullYear()}-${pad2(v.getMonth()+1)}-${pad2(v.getDate())}`;
       }
       if (typeof v === 'number') {
+        // Excel serial fallback:
         const d = new Date((v - 25569) * 86400 * 1000);
         if (!isNaN(d.getTime())) return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
       }
@@ -578,7 +502,9 @@
       }
       return null;
     }
-    function parseUserDateInput(v) { return parseDdMmmYy(v) || parseMaybeDate(v); }
+    function parseUserDateInput(v) {
+      return parseDdMmmYy(v) || parseMaybeDate(v);
+    }
     function numeric(val) {
       if (val == null || val === '') return null;
       const n = Number(String(val).replace(/[^0-9.\-]/g,''));
@@ -1416,7 +1342,9 @@
         try {
           const got = await githubGetFile(cfg);
           if (got.exists) sha = got.sha;
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          // ignore GET error, try creating
+        }
         const content = b64EncodeUtf8(JSON.stringify(db, null, 2));
         const body = {
           message: `Visa Tracker Update ${formatDMYTime(new Date().toISOString())}`,
@@ -1486,7 +1414,7 @@
       `;
       showModal('GitHub Sync', html, `
         <button class="btn secondary" onclick="closeModal()">Close</button>
-        <button class="btn secondary" onclick="(function(){ const t=document.getElementById('gh_token'); t.type = (t.type==='password'?'text':'password'); })()">Show/Hide Token</button>
+        <button class="btn secondary" onclick="(function(){ const c=getGitHubConfig(); document.getElementById('gh_token').type = (document.getElementById('gh_token').type==='password'?'text':'password'); })()">Show/Hide Token</button>
         <button class="btn" onclick="saveGitHubConfigFromModal()">Save Config</button>
         <button class="btn orange" onclick="githubSave()">Save Now</button>
         <button class="btn" onclick="githubLoad()">Load from GitHub</button>
@@ -1514,7 +1442,6 @@
     // INIT / REFRESH
     // ==============================
     function refreshAll() {
-      if (!isLoggedIn()) return; // gate UI updates until login
       fillAgencyFilters();
       fillStatusFilter();
       loadCandidates();
@@ -1524,8 +1451,7 @@
     function init() {
       loadDB();
       updateGhStatus('idle');
-      ensureAuth();
-      if (isLoggedIn()) refreshAll();
+      refreshAll();
     }
     init();
   </script>
