@@ -52,7 +52,7 @@
     .tabs-inner { width:100%; margin:0 auto; padding:8px 12px; display:flex; gap:8px; align-items:center; }
     .tab {
       border:1px solid var(--border);
-      background:#fff; color:var(--text);
+      background:#fff; color:#000;
       padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600;
     }
     .tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
@@ -82,7 +82,7 @@
     @media (max-width: 640px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
 
     label { font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
-    input[type="text"], input[type="number"], select, textarea {
+    input[type="text"], input[type="password"], input[type="number"], select, textarea {
       background:#fff; color:var(--text);
       border:1px solid var(--border);
       border-radius:8px; padding:9px 10px; width:100%;
@@ -94,7 +94,7 @@
       color:#fff; border:none; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:700;
     }
     .btn:hover { background:var(--primary-600); }
-    .btn.secondary { background:#fff; color:var(--text); border:1px solid var(--border); }
+    .btn.secondary { background:#fff; color:#000; border:1px solid var(--border); }
     .btn.orange { background:var(--accent); }
     .btn.orange:hover { background:var(--accent-600); }
     .btn.danger { background:var(--bad); }
@@ -156,6 +156,7 @@
     .auth-logo { width:64px; height:64px; border-radius:12px; border:1px solid var(--border); object-fit:cover; }
     .auth-title { margin:8px 0 0 0; font-size:18px; font-weight:800; }
     .auth-sub { margin:0; color:var(--muted); font-size:12px; }
+    .auth-input { height:44px; } /* Ensures username/password consistent size */
   </style>
 </head>
 <body>
@@ -173,18 +174,17 @@
       <div style="margin-top:12px;" class="grid2">
         <div style="grid-column:1/-1;">
           <label>Username</label>
-          <input id="login_user" type="text" placeholder="2025" autocomplete="username" onkeydown="if(event.key==='Enter'){document.getElementById('login_pass').focus()}">
+          <input id="login_user" class="auth-input" type="text" placeholder="Username" autocomplete="username" onkeydown="if(event.key==='Enter'){document.getElementById('login_pass').focus()}">
         </div>
         <div style="grid-column:1/-1;">
           <label>Password</label>
-          <input id="login_pass" type="password" placeholder="2025" autocomplete="current-password" onkeydown="if(event.key==='Enter'){doLogin()}">
+          <input id="login_pass" class="auth-input" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){doLogin()}">
         </div>
       </div>
 
       <div class="row" style="justify-content:flex-end; margin-top:12px;">
         <button class="btn" onclick="doLogin()">Login</button>
       </div>
-      <div class="muted" style="margin-top:8px;">Hint: Username 2025, Password 2025</div>
     </div>
   </div>
 
@@ -474,7 +474,7 @@
     // ==============================
     // CONSTANTS / ENUMS
     // ==============================
-    const DB_KEY = 'visaTracker.localDB.v3'; // bumped for new features
+    const DB_KEY = 'visaTracker.localDB.v3';
     const GITHUB_CFG_KEY = 'visaTracker.githubConfig.v1';
     const STATUS_LIST = [
       "SELECTED","HOLD","BACKOUT","PASSPORT_UNDER_RENEWAL","READY_FOR_MEDICAL",
